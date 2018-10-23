@@ -11,15 +11,16 @@ soup = BS(requests.get(site).content, 'lxml')
 
 dic = {}
 
+#get all urls leading to each chapter
 all_chap = [c['href'] for c in soup.findAll('a', {'style': 'color: #008000;'})
             if c.text.strip()[-1] in [str(i) for i in range(1, 12)]]
 
-
+#cosine similarity function
 def get_cosine_sim(*strs):
     vectors = [t for t in get_vectors(*strs)]
     return cosine_similarity(vectors)[0][1]
 
-
+#vectorize each words in a sentence
 def get_vectors(*strs):
     try:
         text = [t for t in strs]
@@ -30,14 +31,14 @@ def get_vectors(*strs):
         return [[0, 0],
                 [0,0]]
 
-
+#extract all nouns in a sentence
 def extract_nouns(strng):
     nouns = ' '.join([word for word, pos in pos_tag(word_tokenize(strng)) if pos.startswith('NN')])
     if nouns == '':
         return 'empty'
     return nouns
 
-
+#to calculate the similary between a set of answers and a question to see if they are one or not
 def questions_answers_sim(quest, answ):
     lst1 = []
     lst2 = []
@@ -46,7 +47,7 @@ def questions_answers_sim(quest, answ):
         lst2.append(get_cosine_sim(quest, i))
     return mean([mean(lst1), mean(lst2)])
 
-
+#compare answers of a question to answers of another to determine if those questions are the same
 def compare_answers(lst1, lst2):
     averages_sen = []
     averages_noun = []
@@ -60,14 +61,15 @@ def compare_answers(lst1, lst2):
         averages_noun.append(get_cosine_sim(extract_nouns(i1), extract_nouns(i2)))
     return mean([mean(averages_noun), mean(averages_sen)])
 
-
+#create a list of answers from input
+#example: answer1, answer2, answer2 => [answer1, answer2, answer3]
 def generate_lst(answers):
     return answers.strip(' ').split(',')
 
 
 print('Getting content from chapters...')
 
-
+#getting {questions, answers} from each chapter
 for chap in all_chap:
     cont_chap = BS(requests.get(chap).content, 'lxml')
     q_content = cont_chap.findAll('ol')
